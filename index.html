@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA — Ethan Lin 攝影展覽個人作品集 (Fullscreen Gallery)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Noto+Serif+TC:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Cormorant Garamond"', '"Noto Serif TC"', 'serif'],
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        gallery: {
+                            900: '#0a0a0c',
+                            800: '#121216',
+                            700: '#1a1a22',
+                            100: '#e5e5eb',
+                            gold: '#d4af37',
+                            goldHover: '#f3ca3e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #0a0a0c;
+            color: #e5e5eb;
+            overflow-x: hidden;
+        }
+
+        /* Top Progress Bar for Scroll Effect #1 */
+        #scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #d4af37, #fef08a);
+            z-index: 100;
+            width: 0%;
+            transition: width 0.1s ease-out;
+        }
+
+        /* Glassmorphism Navigation */
+        .nav-glass {
+            background: rgba(10, 10, 12, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Ambient Lighting Beam */
+        .spotlight-beam {
+            background: radial-gradient(circle at 50% -20%, rgba(212, 175, 55, 0.15), transparent 70%);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2a35;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4af37;
+        }
+
+        /* PORTFOLIO CARD HOVER EFFECTS (Multi-state transformations) */
+        .gallery-card {
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), 
+                        border-color 0.4s ease, 
+                        box-shadow 0.4s ease;
+            will-change: transform, opacity;
+        }
+        
+        /* Hover Effect 1: Card Elevation & Border Glow */
+        .gallery-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: rgba(212, 175, 55, 0.8);
+            box-shadow: 0 20px 40px -15px rgba(212, 175, 55, 0.25);
+        }
+
+        /* Hover Effect 2: Image Scale & Saturation Boost */
+        .gallery-img {
+            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
+        }
+        .gallery-card:hover .gallery-img {
+            transform: scale(1.08);
+            filter: saturate(125%) brightness(105%);
+        }
+
+        /* Hover Effect 3: Overlay Elevation & Opacity Fade */
+        .gallery-overlay {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            transform: translateY(10px);
+        }
+        .gallery-card:hover .gallery-overlay {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* CATEGORY FILTER ANIMATION CLASSES */
+        .card-anim-out {
+            opacity: 0 !important;
+            transform: scale(0.9) translateY(25px) !important;
+            pointer-events: none;
+        }
+        .card-anim-in {
+            animation: cardFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes cardFadeIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.92) translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* SCROLL REVEAL EFFECT #2 & #3 (Scroll-driven reveal & tilt) */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(40px) rotate(1deg);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity, transform;
+        }
+        .scroll-reveal.active {
+            opacity: 1;
+            transform: translateY(0) rotate(0deg);
+        }
+
+        /* Fullscreen Gallery Lightbox Effects */
+        .modal-blur {
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+
+        @keyframes floatDown {
+            0%, 100% { transform: translateY(0); opacity: 0.8; }
+            50% { transform: translateY(10px); opacity: 0.3; }
+        }
+        .animate-float {
+            animation: floatDown 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-gallery-gold selection:text-black">
+
+    <!-- Scroll Progress Bar -->
+    <div id="scroll-progress"></div>
+
+    <!-- NAVIGATION BAR -->
+    <header id="main-nav" class="fixed top-0 left-0 w-full z-40 nav-glass transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <!-- Logo & Photographer Name -->
+            <a href="#hero" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 border border-gallery-gold/40 rounded-full flex items-center justify-center group-hover:border-gallery-gold transition-colors">
+                    <span class="font-serif italic font-bold text-lg text-gallery-gold">A</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-serif text-xl tracking-widest text-white uppercase font-light">AURA</span>
+                    <span class="text-[10px] tracking-[0.25em] text-gray-400 uppercase">ETHAN LIN GALLERY</span>
+                </div>
+            </a>
+
+            <!-- Navigation Links (Desktop) -->
+            <nav class="hidden md:flex items-center gap-8 text-sm tracking-widest uppercase">
+                <a href="#about" class="text-gray-300 hover:text-gallery-gold transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-gallery-gold hover:after:w-full after:transition-all">關於策展</a>
+                <a href="#portfolio" class="text-gray-300 hover:text-gallery-gold transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-gallery-gold hover:after:w-full after:transition-all">典藏作品</a>
+                <a href="#feature" class="text-gray-300 hover:text-gallery-gold transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-gallery-gold hover:after:w-full after:transition-all">主題特展</a>
+                <a href="#contact" class="text-gray-300 hover:text-gallery-gold transition-colors py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-gallery-gold hover:after:w-full after:transition-all">聯絡與觀展</a>
+            </nav>
+
+            <!-- Quick Controls -->
+            <div class="hidden sm:flex items-center gap-4">
+                <button onclick="toggleSpotlight()" id="spotlight-btn" class="px-4 py-1.5 border border-white/15 rounded-full text-xs tracking-wider text-gray-300 hover:border-gallery-gold hover:text-gallery-gold transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-gallery-gold"></i>
+                    <span id="spotlight-text">展廳燈光: 展覽模式</span>
+                </button>
+            </div>
+
+            <!-- Mobile Menu Toggle Button -->
+            <button id="menu-btn" class="md:hidden text-gray-300 hover:text-white text-2xl focus:outline-none">
+                <i class="fa-solid fa-bars-staggered"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu" class="hidden md:hidden bg-gallery-900/95 border-b border-white/10 px-6 py-6 space-y-4">
+            <a href="#about" class="block text-gray-300 hover:text-gallery-gold text-lg font-serif">關於策展</a>
+            <a href="#portfolio" class="block text-gray-300 hover:text-gallery-gold text-lg font-serif">典藏作品</a>
+            <a href="#feature" class="block text-gray-300 hover:text-gallery-gold text-lg font-serif">主題特展</a>
+            <a href="#contact" class="block text-gray-300 hover:text-gallery-gold text-lg font-serif">聯絡與觀展</a>
+        </div>
+    </header>
+
+    <!-- HERO SECTION (主視覺區 - 包含 Scroll Effect #1: Zoom, Rotation, Offset, Opacity) -->
+    <section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden spotlight-beam pt-20">
+        <!-- Hero Background Layer -->
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <div id="hero-bg" class="w-full h-full bg-cover bg-center origin-center transform scale-100 opacity-90 transition-transform duration-75 ease-out" 
+                 style="background-image: url('https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=2000&q=80');">
+            </div>
+            <!-- Cinematic Dark Overlays -->
+            <div class="absolute inset-0 bg-gradient-to-t from-gallery-900 via-gallery-900/40 to-gallery-900/30"></div>
+            <div class="absolute inset-0 bg-black/40"></div>
+        </div>
+
+        <!-- Hero Content Overlay -->
+        <div id="hero-content" class="relative z-10 max-w-5xl mx-auto px-6 text-center flex flex-col items-center justify-center transition-all duration-100">
+            <!-- Exhibition Tag -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 border border-gallery-gold/30 rounded-full bg-black/50 backdrop-blur-md mb-8 shadow-xl">
+                <span class="w-2 h-2 rounded-full bg-gallery-gold animate-pulse"></span>
+                <span class="text-xs uppercase tracking-[0.3em] text-gallery-gold font-light">2026 Solo Photography Exhibition</span>
+            </div>
+
+            <!-- Main Title (主標題) -->
+            <h1 class="font-serif text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-tight text-white mb-6 font-light leading-none">
+                SILENT <span class="italic text-gallery-gold font-normal">LIGHT</span>
+            </h1>
+
+            <!-- Subtitle (副標題) -->
+            <p class="font-serif italic text-lg sm:text-2xl md:text-3xl text-gray-300 max-w-2xl font-light mb-10 leading-relaxed">
+                「用幾何與光影，為流逝的時間構築一座安靜的線上展廳。」
+            </p>
+
+            <!-- Call to Action Buttons -->
+            <div class="flex flex-col sm:flex-row items-center gap-5">
+                <a href="#portfolio" class="px-8 py-4 bg-gallery-gold hover:bg-gallery-goldHover text-black rounded-full font-medium tracking-widest text-xs uppercase transition-all transform hover:-translate-y-1 shadow-lg shadow-gallery-gold/20 flex items-center gap-3">
+                    <span>進入展廳觀展 (Gallery)</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+                <button onclick="openFullscreenGallery(0)" class="px-8 py-4 border border-white/30 hover:border-gallery-gold text-white hover:text-gallery-gold rounded-full font-medium tracking-widest text-xs uppercase transition-all backdrop-blur-sm hover:bg-white/5 flex items-center gap-2">
+                    <i class="fa-solid fa-expand"></i>
+                    <span>全螢幕巡禮模式</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scroll Indicator (捲動指引) -->
+        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-10 flex flex-col items-center gap-3">
+            <span class="text-[10px] tracking-[0.3em] uppercase text-gray-400 font-light">SCROLL TO EXPLORE</span>
+            <div class="w-6 h-10 border border-white/20 rounded-full flex justify-center p-2">
+                <div class="w-1 h-2 bg-gallery-gold rounded-full animate-float"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ABOUT / EXHIBITION PHILOSOPHY SECTION -->
+    <section id="about" class="py-28 relative bg-gallery-900 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+                <!-- Curator Photo Frame with Scroll Reveal -->
+                <div class="lg:col-span-5 relative scroll-reveal">
+                    <div class="relative z-10 rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1000&q=80" alt="Ethan Lin 攝影師肖像" class="w-full h-auto object-cover filter grayscale contrast-125 hover:grayscale-0 transition-all duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                        <div class="absolute bottom-6 left-6 right-6">
+                            <span class="text-xs uppercase tracking-widest text-gallery-gold block mb-1">Visual Artist & Curator</span>
+                            <h3 class="font-serif text-2xl text-white">Ethan Lin (林哲宇)</h3>
+                        </div>
+                    </div>
+                    <!-- Decorative Frame -->
+                    <div class="absolute -bottom-6 -right-6 w-full h-full border border-gallery-gold/20 rounded-2xl -z-0 hidden sm:block"></div>
+                </div>
+
+                <!-- Text Content -->
+                <div class="lg:col-span-7 space-y-8 scroll-reveal">
+                    <div class="space-y-3">
+                        <span class="text-xs uppercase tracking-[0.3em] text-gallery-gold">Exhibition Philosophy / 策展理念</span>
+                        <h2 class="font-serif text-4xl sm:text-5xl text-white font-light leading-tight">
+                            將快門化為靜音，<br>讓每張照片都成為展覽牆上的思考。
+                        </h2>
+                    </div>
+
+                    <p class="text-gray-400 font-light leading-relaxed text-lg">
+                        這座線上作品集不僅是影像的堆疊，而是一場精心安排的「靜態視覺巡禮」。作品嚴選聚焦於<strong class="text-white font-normal">旅行 (Travel)、風景 (Landscape) 與街拍 (Street)</strong>。在每一次瀏覽中，邀請您停下腳步，感受快門凍結的瞬間空氣、光的質地與深層的情感敘事。
+                    </p>
+
+                    <!-- Photographer Milestones -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-6 pt-4 border-t border-white/10">
+                        <div>
+                            <span class="font-serif text-3xl text-gallery-gold block">12+</span>
+                            <span class="text-xs tracking-wider text-gray-400 uppercase">國際攝影獎項</span>
+                        </div>
+                        <div>
+                            <span class="font-serif text-3xl text-gallery-gold block">18 展場</span>
+                            <span class="text-xs tracking-wider text-gray-400 uppercase">國內外聯合展出</span>
+                        </div>
+                        <div>
+                            <span class="font-serif text-3xl text-gallery-gold block">100%</span>
+                            <span class="text-xs tracking-wider text-gray-400 uppercase">原生光影捕捉</span>
+                        </div>
+                    </div>
+
+                    <!-- Equipment Specs -->
+                    <div class="p-6 bg-gallery-800/60 rounded-xl border border-white/5 space-y-2">
+                        <div class="flex items-center gap-2 text-gallery-gold text-xs tracking-widest uppercase">
+                            <i class="fa-solid fa-camera text-xs"></i>
+                            <span>常用策展設備 (Gear Setup)</span>
+                        </div>
+                        <p class="text-xs text-gray-400 leading-normal">
+                            Leica M11, Hasselblad X2D 100C | Summilux-M 35mm f/1.4 | XCD 55mm f/2.5
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PORTFOLIO SECTION (作品集 — 6-12 件、完整 Metadata、動態篩選動畫、全螢幕畫廊入口) -->
+    <section id="portfolio" class="py-28 bg-gallery-800 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- Section Header -->
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-white/10 pb-8 gap-6 scroll-reveal">
+                <div>
+                    <span class="text-xs uppercase tracking-[0.3em] text-gallery-gold block mb-2">Exhibition Collections (9 Selected Works)</span>
+                    <h2 class="font-serif text-4xl sm:text-5xl text-white font-light">典藏作品集</h2>
+                </div>
+                <p class="text-gray-400 text-sm max-w-md font-light">
+                    點擊任一作品可進入<strong class="text-gallery-gold font-normal">全螢幕畫廊 (Fullscreen Gallery)</strong> 觀展模式，可使用鍵盤方向鍵 (← / →) 輕鬆切換。
+                </p>
+            </div>
+
+            <!-- Category Filter Buttons (All, Travel, Landscape, Street) -->
+            <div class="flex flex-wrap items-center gap-3 mb-12 scroll-reveal" id="filter-container">
+                <button onclick="filterCategory('all', this)" class="filter-btn active px-6 py-2.5 rounded-full text-xs uppercase tracking-widest border transition-all duration-300 bg-gallery-gold text-black border-gallery-gold font-medium shadow-md shadow-gallery-gold/20">
+                    全部展品 (All)
+                </button>
+                <button onclick="filterCategory('travel', this)" class="filter-btn px-6 py-2.5 rounded-full text-xs uppercase tracking-widest border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-all duration-300">
+                    旅行 (Travel)
+                </button>
+                <button onclick="filterCategory('landscape', this)" class="filter-btn px-6 py-2.5 rounded-full text-xs uppercase tracking-widest border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-all duration-300">
+                    風景 (Landscape)
+                </button>
+                <button onclick="filterCategory('street', this)" class="filter-btn px-6 py-2.5 rounded-full text-xs uppercase tracking-widest border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-all duration-300">
+                    街拍 (Street)
+                </button>
+            </div>
+
+            <!-- Gallery Grid (Rendered dynamically via JS) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" id="gallery-grid">
+                <!-- Cards will be populated dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURE / EXHIBITION ROOM SECTION (專題特展 - Scroll Effect #3: Parallax Floating) -->
+    <section id="feature" class="py-28 bg-gallery-900 border-t border-b border-white/5 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-6">
+            <!-- Header -->
+            <div class="text-center max-w-3xl mx-auto mb-16 space-y-4 scroll-reveal">
+                <span class="text-xs uppercase tracking-[0.4em] text-gallery-gold">Curated Exhibition Room #01</span>
+                <h2 class="font-serif text-4xl sm:text-6xl text-white font-light">年度特別企劃：《東京靜脈》</h2>
+                <p class="text-gray-400 font-light text-base leading-relaxed">
+                    以 35mm 單焦鏡頭走入深夜的東京，記錄喧囂背後、靜脈般延伸的巷弄與霓虹餘溫。
+                </p>
+            </div>
+
+            <!-- Showcase Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <div class="lg:col-span-7 relative group scroll-reveal">
+                    <div class="overflow-hidden rounded-2xl border border-white/10 shadow-2xl relative">
+                        <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80" alt="東京深夜霓虹" class="w-full h-[480px] object-cover group-hover:scale-105 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+                        <div class="absolute bottom-8 left-8 right-8 flex items-end justify-between">
+                            <div>
+                                <span class="text-xs text-gallery-gold tracking-widest uppercase block mb-1">2025 SPECIAL COLLECTION</span>
+                                <h3 class="font-serif text-3xl text-white font-light">Nocturnal Monologue / 夜行獨白</h3>
+                            </div>
+                            <button onclick="openFullscreenGallery(4)" class="w-12 h-12 rounded-full bg-gallery-gold text-black flex items-center justify-center hover:bg-white transition-colors shadow-lg">
+                                <i class="fa-solid fa-expand text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-6 scroll-reveal">
+                    <div class="p-8 bg-gallery-800 rounded-2xl border border-white/10 space-y-6 shadow-xl">
+                        <div class="space-y-2">
+                            <span class="text-xs uppercase tracking-widest text-gallery-gold">策展筆記 (Curator Note)</span>
+                            <h4 class="font-serif text-2xl text-white">「雨夜裡的孤獨與極簡光影」</h4>
+                        </div>
+                        <p class="text-gray-400 text-sm font-light leading-relaxed">
+                            這系列作品拍攝於 2025 年冬季的雨夜。城市的高樓光芒在濕漉的地面折射，人影在霓虹中一瞬即逝。透過長時間曝光與調和的冷色調，展現都市喧囂過後的詩意孤寂。
+                        </p>
+                        
+                        <div class="pt-4 border-t border-white/10 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-gray-500 uppercase block">展覽系列年份</span>
+                                <span class="text-xs text-gray-300 font-serif">2025 · 東京 (Tokyo, Japan)</span>
+                            </div>
+                            <button onclick="openFullscreenGallery(4)" class="px-5 py-2.5 bg-gallery-gold/10 hover:bg-gallery-gold hover:text-black text-gallery-gold text-xs tracking-widest uppercase rounded-full transition-all flex items-center gap-2 border border-gallery-gold/30">
+                                <span>啟動全螢幕導覽</span>
+                                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mini Carousel Thumbnails -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="rounded-lg overflow-hidden border border-white/10 h-24 relative group cursor-pointer" onclick="openFullscreenGallery(0)">
+                            <img src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+                            <div class="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors"></div>
+                        </div>
+                        <div class="rounded-lg overflow-hidden border border-white/10 h-24 relative group cursor-pointer" onclick="openFullscreenGallery(4)">
+                            <img src="https://images.unsplash.com/photo-1477959858617-67f30ac4ce78?auto=format&fit=crop&w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+                            <div class="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors"></div>
+                        </div>
+                        <div class="rounded-lg overflow-hidden border border-white/10 h-24 relative group cursor-pointer" onclick="openFullscreenGallery(7)">
+                            <img src="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=400&q=80" class="w-full h-full object-cover group-hover:scale-110 transition-transform">
+                            <div class="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT / EXHIBITION GUESTBOOK -->
+    <section id="contact" class="py-28 bg-gallery-800 relative">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
+                <!-- Info Left -->
+                <div class="lg:col-span-5 space-y-8 scroll-reveal">
+                    <div class="space-y-3">
+                        <span class="text-xs uppercase tracking-[0.3em] text-gallery-gold">Get In Touch</span>
+                        <h2 class="font-serif text-4xl sm:text-5xl text-white font-light">觀展留言與典藏諮詢</h2>
+                    </div>
+
+                    <p class="text-gray-400 font-light leading-relaxed">
+                        歡迎留下您對展覽作品的想法、典藏微噴輸出購買諮詢，或是旅行/風景商業專案委託。
+                    </p>
+
+                    <!-- Contact Details Cards -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4 p-4 rounded-xl bg-gallery-900/60 border border-white/5">
+                            <div class="w-10 h-10 rounded-full bg-gallery-gold/10 flex items-center justify-center text-gallery-gold">
+                                <i class="fa-solid fa-envelope"></i>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-500 uppercase block">EMAIL INQUIRY</span>
+                                <span class="text-sm text-gray-200">ethan.lin.studio@aura-gallery.com</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4 p-4 rounded-xl bg-gallery-900/60 border border-white/5">
+                            <div class="w-10 h-10 rounded-full bg-gallery-gold/10 flex items-center justify-center text-gallery-gold">
+                                <i class="fa-solid fa-location-dot"></i>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-gray-500 uppercase block">STUDIO & GALLERY LOCATION</span>
+                                <span class="text-sm text-gray-200">台北市信義區光影大道 108 號 3 樓</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4 p-4 rounded-xl bg-gallery-900/60 border border-white/5">
+                            <div class="w-10 h-10 rounded-full bg-gallery-gold/10 flex items-center justify-center text-gallery-gold">
+                                <i class="fa-solid fa-hashtag"></i>
+                            </div>
+                            <div class="flex gap-4 text-gray-400 text-lg">
+                                <a href="#" class="hover:text-gallery-gold transition-colors"><i class="fa-brands fa-instagram"></i></a>
+                                <a href="#" class="hover:text-gallery-gold transition-colors"><i class="fa-brands fa-behance"></i></a>
+                                <a href="#" class="hover:text-gallery-gold transition-colors"><i class="fa-brands fa-twitter"></i></a>
+                                <a href="#" class="hover:text-gallery-gold transition-colors"><i class="fa-brands fa-flickr"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Right -->
+                <div class="lg:col-span-7 bg-gallery-900 p-8 sm:p-10 rounded-2xl border border-white/10 shadow-xl scroll-reveal">
+                    <form id="contact-form" onsubmit="handleFormSubmit(event)" class="space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-xs uppercase tracking-wider text-gray-400">您的姓名 / Name</label>
+                                <input type="text" required placeholder="例如: 陳大明" class="w-full bg-gallery-800 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gallery-gold transition-colors">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs uppercase tracking-wider text-gray-400">電子郵件 / Email</label>
+                                <input type="email" required placeholder="name@example.com" class="w-full bg-gallery-800 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gallery-gold transition-colors">
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs uppercase tracking-wider text-gray-400">諮詢主題 / Inquiry Type</label>
+                            <select class="w-full bg-gallery-800 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-gallery-gold transition-colors">
+                                <option value="guestbook">展覽觀後感言 (Guestbook Message)</option>
+                                <option value="buy">典藏微噴相片購買 (Prints & License)</option>
+                                <option value="travel">旅行/風景委託拍攝 (Travel & Landscape Assignment)</option>
+                                <option value="exhibition">策展與合作諮詢 (Exhibition Inquiry)</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs uppercase tracking-wider text-gray-400">留言訊息 / Message</label>
+                            <textarea rows="5" required placeholder="請分享您的感想或專案需求..." class="w-full bg-gallery-800 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gallery-gold transition-colors"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full py-4 bg-gallery-gold hover:bg-gallery-goldHover text-black font-medium tracking-widest text-xs uppercase rounded-lg transition-all shadow-lg shadow-gallery-gold/20 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>送出留言與諮詢</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-12 bg-gallery-900 border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-gray-500 font-light">
+            <div class="flex items-center gap-2">
+                <span class="font-serif italic text-gallery-gold text-lg">AURA</span>
+                <span>© 2026 ETHAN LIN PHOTOGRAPHY. ALL RIGHTS RESERVED.</span>
+            </div>
+            <div class="flex gap-6">
+                <a href="#hero" class="hover:text-gallery-gold transition-colors">返回頂部</a>
+                <a href="#portfolio" class="hover:text-gallery-gold transition-colors">典藏作品</a>
+                <a href="#contact" class="hover:text-gallery-gold transition-colors">聯絡諮詢</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- FULLSCREEN GALLERY MODAL (全螢幕畫廊 - 鍵盤/觸控滑動/縮放與完整 Metadata 控制) -->
+    <div id="fullscreen-modal" class="fixed inset-0 z-50 hidden modal-blur bg-black/95 flex flex-col justify-between opacity-0 transition-opacity duration-300">
+        <!-- Gallery Top Control Bar -->
+        <div class="p-6 flex items-center justify-between border-b border-white/10 z-10 bg-black/40">
+            <div class="flex items-center gap-4">
+                <span class="font-serif italic text-gallery-gold text-xl">AURA</span>
+                <span class="text-gray-500 text-xs">|</span>
+                <span id="fs-counter" class="text-xs uppercase tracking-widest text-gray-300 font-mono">01 / 09</span>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="flex items-center gap-4">
+                <button onclick="toggleExifDrawer()" class="px-3 py-1.5 border border-white/20 rounded-full text-xs text-gray-300 hover:text-gallery-gold hover:border-gallery-gold transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-xs"></i>
+                    <span class="hidden sm:inline">EXIF 參數</span>
+                </button>
+                <button onclick="closeFullscreenGallery()" class="text-white/70 hover:text-white text-2xl p-1 focus:outline-none">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Central Fullscreen Photo Viewer with Navigation Arrows -->
+        <div class="relative flex-1 flex items-center justify-center p-4 sm:p-8 overflow-hidden select-none" id="fs-viewer-container">
+            <!-- Left Arrow -->
+            <button onclick="navigateGallery(-1)" class="absolute left-4 sm:left-8 z-20 w-12 h-12 rounded-full bg-black/60 border border-white/15 text-white hover:text-gallery-gold hover:border-gallery-gold flex items-center justify-center transition-all">
+                <i class="fa-solid fa-chevron-left text-lg"></i>
+            </button>
+
+            <!-- Main Photo Display -->
+            <div class="relative max-w-6xl max-h-[75vh] flex items-center justify-center">
+                <img id="fs-image" src="" alt="" class="max-h-[75vh] w-auto max-w-full object-contain rounded-lg shadow-2xl transition-all duration-300">
+            </div>
+
+            <!-- Right Arrow -->
+            <button onclick="navigateGallery(1)" class="absolute right-4 sm:right-8 z-20 w-12 h-12 rounded-full bg-black/60 border border-white/15 text-white hover:text-gallery-gold hover:border-gallery-gold flex items-center justify-center transition-all">
+                <i class="fa-solid fa-chevron-right text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Gallery Bottom Info Panel & EXIF Drawer -->
+        <div class="bg-gallery-900/90 border-t border-white/10 p-6 sm:p-8 z-10">
+            <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+                <!-- Left Details -->
+                <div class="lg:col-span-8 space-y-2">
+                    <div class="flex items-center gap-3 text-xs tracking-widest text-gallery-gold uppercase">
+                        <span id="fs-category" class="px-2.5 py-0.5 rounded bg-gallery-gold/10 border border-gallery-gold/30">CATEGORY</span>
+                        <span id="fs-year" class="text-gray-400 font-mono">年代: 2025</span>
+                    </div>
+                    <h3 id="fs-title" class="font-serif text-2xl sm:text-4xl text-white font-light">Title</h3>
+                    <p id="fs-desc" class="text-sm text-gray-400 font-light leading-relaxed max-w-3xl">
+                        Description goes here...
+                    </p>
+                </div>
+
+                <!-- Right EXIF Collapsible Panel -->
+                <div id="fs-exif-drawer" class="lg:col-span-4 bg-gallery-800/80 p-4 rounded-xl border border-white/10 text-xs space-y-2">
+                    <div class="text-[10px] text-gallery-gold uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-camera"></i> EXIF PARAMETERS
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-gray-300 font-serif">
+                        <div><span class="text-gray-500 text-[10px] block">CAMERA</span> <span id="fs-exif-cam">Leica M11</span></div>
+                        <div><span class="text-gray-500 text-[10px] block">LENS</span> <span id="fs-exif-lens">35mm f/1.4</span></div>
+                        <div><span class="text-gray-500 text-[10px] block">SETTINGS</span> <span id="fs-exif-settings">f/2.0 · 1/250s</span></div>
+                        <div><span class="text-gray-500 text-[10px] block">LOCATION</span> <span id="fs-exif-loc">Kyoto, Japan</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-8 right-8 z-50 hidden bg-gallery-gold text-black px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-4">
+        <i class="fa-solid fa-circle-check text-lg"></i>
+        <span id="toast-message" class="text-sm font-medium">訊息已成功傳送！</span>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // 1. Photography Dataset (9 Selected Works with Picture, Title, Category, Year, Description, EXIF)
+        const galleryData = [
+            {
+                id: 1,
+                title: "京都雨後漫步 (Kyoto Rain)",
+                category: "street",
+                categoryName: "街拍 (Street)",
+                year: "2025",
+                image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80",
+                desc: "雨後的京都古巷，石板路反射著柔和的街燈與傘影，展現沉靜古樸的幽情與微濕的光影質感。",
+                camera: "Leica M11",
+                lens: "Summilux-M 35mm f/1.4",
+                settings: "f/2.0 · 1/250s · ISO 400",
+                location: "Kyoto, Japan"
+            },
+            {
+                id: 2,
+                title: "極光與寂靜 (Arctic Silence)",
+                category: "landscape",
+                categoryName: "風景 (Landscape)",
+                year: "2024",
+                image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
+                desc: "位於冰島荒野中的湖面前極光倒影，呈現大自然的宏偉與極簡幾何平衡感。",
+                camera: "Hasselblad X2D 100C",
+                lens: "XCD 38mm f/2.5",
+                settings: "f/8.0 · 2.5s · ISO 64",
+                location: "Reykjavik, Iceland"
+            },
+            {
+                id: 3,
+                title: "威尼斯運河晨霧 (Canal Whispers)",
+                category: "travel",
+                categoryName: "旅行 (Travel)",
+                year: "2024",
+                image: "https://images.unsplash.com/photo-1514896856000-91cb6de818e0?auto=format&fit=crop&w=1200&q=80",
+                desc: "清晨的威尼斯運河，貢多拉在薄霧中若隱若現，訴說著水都悠長沈靜的歷史氣息。",
+                camera: "Leica SL2",
+                lens: "Vario-Elmarit 24-90mm",
+                settings: "f/5.6 · 1/320s · ISO 100",
+                location: "Venice, Italy"
+            },
+            {
+                id: 4,
+                title: "撒哈拉金黃沙丘 (Sahara Waves)",
+                category: "landscape",
+                categoryName: "風景 (Landscape)",
+                year: "2025",
+                image: "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=80",
+                desc: "落日餘暉灑落於連綿不絕的沙漠丘陵，呈現極具視覺張力的幾何光影與曲線。",
+                camera: "Sony A7R V",
+                lens: "FE 24-70mm f/2.8 GM II",
+                settings: "f/8.0 · 1/500s · ISO 100",
+                location: "Merzouga, Morocco"
+            },
+            {
+                id: 5,
+                title: "東京雨夜獨白 (Tokyo Nocturne)",
+                category: "street",
+                categoryName: "街拍 (Street)",
+                year: "2025",
+                image: "https://images.unsplash.com/photo-1477959858617-67f30ac4ce78?auto=format&fit=crop&w=1200&q=80",
+                desc: "雨後的都市街道，地面濕滑的反光與斑駁霓虹記錄下行人仓促而孤寂的足跡。",
+                camera: "Ricoh GR III",
+                lens: "18.3mm (28mm equiv)",
+                settings: "f/2.8 · 1/160s · ISO 800",
+                location: "Tokyo, Japan"
+            },
+            {
+                id: 6,
+                title: "開羅古城晨曦 (Desert Dawn)",
+                category: "travel",
+                categoryName: "旅行 (Travel)",
+                year: "2023",
+                image: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80",
+                desc: "古文明遺址上的第一道曙光，金黃色溫暖光芒漸次灑落於千年的古老牆面。",
+                camera: "Sony A7R V",
+                lens: "FE 24-70mm f/2.8 GM II",
+                settings: "f/5.6 · 1/320s · ISO 200",
+                location: "Cairo, Egypt"
+            },
+            {
+                id: 7,
+                title: "阿爾卑斯峰頂雪色 (Alpine Summit)",
+                category: "landscape",
+                categoryName: "風景 (Landscape)",
+                year: "2024",
+                image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
+                desc: "高聳入雲的雪山巔峰，在湛藍天空與寒冽流雲下顯得無比震撼與純粹。",
+                camera: "Hasselblad X2D 100C",
+                lens: "XCD 90mm f/2.5",
+                settings: "f/8.0 · 1/1000s · ISO 64",
+                location: "Zermatt, Switzerland"
+            },
+            {
+                id: 8,
+                title: "紐約黃昏街角 (New York Crossing)",
+                category: "street",
+                categoryName: "街拍 (Street)",
+                year: "2025",
+                image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=80",
+                desc: "黃昏斜陽穿透摩天大樓縫隙，將斑馬線上的行人身影拉長成靜謐的光影樂章。",
+                camera: "Leica M11",
+                lens: "Summilux-M 50mm f/1.4",
+                settings: "f/4.0 · 1/1000s · ISO 100",
+                location: "New York, USA"
+            },
+            {
+                id: 9,
+                title: "冰島玄武岩海岸 (Reynisfjara Beach)",
+                category: "travel",
+                categoryName: "旅行 (Travel)",
+                year: "2024",
+                image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+                desc: "遠離塵囂的孤獨黑沙灘，巨浪拍打著玄武岩石柱，展現冷冽而遼闊的大地美感。",
+                camera: "Sony A7R V",
+                lens: "FE 16-35mm f/2.8 GM II",
+                settings: "f/9.0 · 1/200s · ISO 100",
+                location: "Vik, Iceland"
+            }
+        ];
+
+        let currentActiveItems = [...galleryData];
+        let currentFSIndex = 0;
+
+        // 2. Render Portfolio Grid Cards
+        function renderGalleryGrid(items) {
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+
+            items.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'gallery-card card-anim-in relative group rounded-2xl overflow-hidden bg-gallery-900 border border-white/10 cursor-pointer shadow-xl';
+                card.onclick = () => openFullscreenGallery(index);
+
+                card.innerHTML = `
+                    <div class="h-80 w-full overflow-hidden relative">
+                        <img src="${item.image}" alt="${item.title}" class="gallery-img w-full h-full object-cover">
+                        
+                        <!-- Top Metadata Badges -->
+                        <div class="absolute top-4 left-4 z-10 flex items-center gap-2">
+                            <span class="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[10px] uppercase tracking-widest text-gallery-gold border border-gallery-gold/30 font-medium">
+                                ${item.categoryName}
+                            </span>
+                            <span class="px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-full text-[10px] text-gray-300 font-mono border border-white/10">
+                                ${item.year}
+                            </span>
+                        </div>
+
+                        <!-- Card Hover Overlay (Triggers multi-state changes) -->
+                        <div class="gallery-overlay absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-0 flex flex-col justify-end p-6">
+                            <span class="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-light mb-1">${item.location}</span>
+                            <h3 class="font-serif text-2xl text-white font-light mb-2">${item.title}</h3>
+                            <p class="text-xs text-gray-400 font-light line-clamp-2 mb-4">${item.desc}</p>
+                            
+                            <div class="flex items-center justify-between text-xs text-gray-300 border-t border-white/15 pt-3">
+                                <span><i class="fa-solid fa-camera text-gallery-gold mr-1.5"></i> ${item.camera}</span>
+                                <span class="text-gallery-gold hover:underline flex items-center gap-1 font-medium">
+                                    全螢幕導覽 <i class="fa-solid fa-expand text-[10px]"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 3. Category Filter with Smooth Animation (Fade-out, offset, scale -> re-render -> fade-in staggered)
+        function filterCategory(category, buttonEl) {
+            // Update Active Button Style
+            const buttons = document.querySelectorAll('#filter-container button');
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-gallery-gold', 'text-black', 'border-gallery-gold', 'font-medium', 'shadow-md');
+                btn.classList.add('border-white/10', 'text-gray-400');
+            });
+
+            buttonEl.classList.add('bg-gallery-gold', 'text-black', 'border-gallery-gold', 'font-medium', 'shadow-md');
+            buttonEl.classList.remove('border-white/10', 'text-gray-400');
+
+            const currentCards = document.querySelectorAll('.gallery-card');
+            
+            // Phase 1: Animate out
+            currentCards.forEach(card => card.classList.add('card-anim-out'));
+
+            // Phase 2: Filter data & Re-render with delay
+            setTimeout(() => {
+                if (category === 'all') {
+                    currentActiveItems = [...galleryData];
+                } else {
+                    currentActiveItems = galleryData.filter(item => item.category === category);
+                }
+                renderGalleryGrid(currentActiveItems);
+            }, 300);
+        }
+
+        // 4. Fullscreen Gallery Controls & Navigation
+        function openFullscreenGallery(indexInCurrent) {
+            currentFSIndex = indexInCurrent;
+            updateFullscreenContent();
+
+            const modal = document.getElementById('fullscreen-modal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Lock page scroll
+
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        function updateFullscreenContent() {
+            if (!currentActiveItems[currentFSIndex]) return;
+            const item = currentActiveItems[currentFSIndex];
+
+            // Update DOM Elements
+            const imgEl = document.getElementById('fs-image');
+            imgEl.style.opacity = '0.3';
+            imgEl.style.transform = 'scale(0.96)';
+
+            setTimeout(() => {
+                imgEl.src = item.image;
+                imgEl.alt = item.title;
+                imgEl.style.opacity = '1';
+                imgEl.style.transform = 'scale(1)';
+            }, 150);
+
+            document.getElementById('fs-counter').innerText = `${String(currentFSIndex + 1).padStart(2, '0')} / ${String(currentActiveItems.length).padStart(2, '0')}`;
+            document.getElementById('fs-title').innerText = item.title;
+            document.getElementById('fs-category').innerText = item.categoryName;
+            document.getElementById('fs-year').innerText = `年代: ${item.year}`;
+            document.getElementById('fs-desc').innerText = item.desc;
+
+            // EXIF
+            document.getElementById('fs-exif-cam').innerText = item.camera;
+            document.getElementById('fs-exif-lens').innerText = item.lens;
+            document.getElementById('fs-exif-settings').innerText = item.settings;
+            document.getElementById('fs-exif-loc').innerText = item.location;
+        }
+
+        function navigateGallery(direction) {
+            currentFSIndex += direction;
+            if (currentFSIndex < 0) {
+                currentFSIndex = currentActiveItems.length - 1;
+            } else if (currentFSIndex >= currentActiveItems.length) {
+                currentFSIndex = 0;
+            }
+            updateFullscreenContent();
+        }
+
+        function closeFullscreenGallery() {
+            const modal = document.getElementById('fullscreen-modal');
+            modal.classList.add('opacity-0');
+            document.body.style.overflow = ''; // Unlock scroll
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function toggleExifDrawer() {
+            const drawer = document.getElementById('fs-exif-drawer');
+            drawer.classList.toggle('hidden');
+        }
+
+        // 5. Keyboard Navigation Support for Fullscreen Gallery (ArrowLeft, ArrowRight, Escape)
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('fullscreen-modal');
+            if (!modal.classList.contains('hidden')) {
+                if (e.key === 'ArrowLeft') navigateGallery(-1);
+                if (e.key === 'ArrowRight') navigateGallery(1);
+                if (e.key === 'Escape') closeFullscreenGallery();
+            }
+        });
+
+        // 6. Touch Swipe Support for Fullscreen Viewer
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const fsViewer = document.getElementById('fs-viewer-container');
+
+        fsViewer.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        fsViewer.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            if (touchEndX < touchStartX - swipeThreshold) {
+                navigateGallery(1); // Swipe Left -> Next
+            } else if (touchEndX > touchStartX + swipeThreshold) {
+                navigateGallery(-1); // Swipe Right -> Prev
+            }
+        }
+
+        // 7. SCROLL EFFECTS LOGIC (3+ Scroll Effects)
+        // Scroll Effect #1: Progress Bar Indicator
+        // Scroll Effect #2: Hero Parallax Zoom, Rotation, & Opacity Decay
+        // Scroll Effect #3: Intersection Observer Scroll Reveals
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            
+            // Effect #1: Progress Bar
+            if (docHeight > 0) {
+                const progress = (scrollY / docHeight) * 100;
+                document.getElementById('scroll-progress').style.width = `${progress}%`;
+            }
+
+            // Effect #2: Hero Parallax (Zoom, Offset, Subtle Tilt, Opacity)
+            const heroBg = document.getElementById('hero-bg');
+            const heroContent = document.getElementById('hero-content');
+            if (heroBg && scrollY <= 1000) {
+                const scaleVal = 1 + (scrollY * 0.00035);
+                const translateYVal = scrollY * 0.3;
+                const rotateVal = scrollY * 0.002;
+                const opacityVal = Math.max(0.1, 1 - (scrollY / 750));
+
+                heroBg.style.transform = `scale(${scaleVal}) translateY(${translateYVal}px) rotate(${rotateVal}deg)`;
+                heroBg.style.opacity = opacityVal;
+
+                if (heroContent) {
+                    heroContent.style.transform = `translateY(${scrollY * 0.18}px)`;
+                    heroContent.style.opacity = Math.max(0, 1 - (scrollY / 550));
+                }
+            }
+        });
+
+        // Effect #3: Intersection Observer Scroll Reveal Animation
+        const observerOptions = {
+            threshold: 0.15,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        // 8. Spotlight Mode Toggle
+        let spotlightOn = true;
+        function toggleSpotlight() {
+            spotlightOn = !spotlightOn;
+            const heroSec = document.getElementById('hero');
+            const btnText = document.getElementById('spotlight-text');
+
+            if (spotlightOn) {
+                heroSec.classList.add('spotlight-beam');
+                btnText.innerText = '展廳燈光: 展覽模式';
+                showToast('已啟用藝廊聚光燈主題情境');
+            } else {
+                heroSec.classList.remove('spotlight-beam');
+                btnText.innerText = '展廳燈光: 明亮模式';
+                showToast('已切換至標準白光視角');
+            }
+        }
+
+        // 9. Toast Notification Handler
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            toastMsg.innerText = message;
+
+            toast.classList.remove('hidden', 'translate-y-4');
+            toast.classList.add('translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-4');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 300);
+            }, 3500);
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            showToast('您的觀展留言已成功送出！策展團隊將盡快回覆。');
+            e.target.reset();
+        }
+
+        // Mobile Menu Toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Initialize App on DOM Load
+        window.onload = function() {
+            renderGalleryGrid(galleryData);
+
+            // Observe Scroll Reveal Elements
+            document.querySelectorAll('.scroll-reveal').forEach(el => {
+                revealObserver.observe(el);
+            });
+        };
+    </script>
+</body>
+</html>
